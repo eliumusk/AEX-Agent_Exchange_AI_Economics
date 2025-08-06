@@ -1,0 +1,16 @@
+[
+  {
+    "hub_id": "content_creation_hub",
+    "name": "内容创作团队",
+    "description": "专注于信息研究和高质量内容撰写。擅长调研、分析、总结和报告生成。",
+    "capabilities": ["research", "writing", "summary", "analysis", "report"],
+    "hub_class": "ContentCreationHub"
+  },
+  {
+    "hub_id": "tech_analysis_hub", 
+    "name": "技术分析团队",
+    "description": "专注于代码分析、执行和技术问题解决。擅长编程、调试、性能优化和技术咨询。",
+    "capabilities": ["coding", "data_analysis", "debugging", "optimization", "technical"],
+    "hub_class": "TechAnalysisHub"
+  }
+]
