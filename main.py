@@ -56,17 +56,13 @@ def display_welcome():
     welcome_text = """
 [bold blue]AEX - 动态智能体市场[/bold blue]
 
-基于《Agent Exchange》论文的核心思想，本系统将AI智能体从被动执行的"工具"
-转变为能够参与市场化选择的"经济参与者"。
+本系统将AI智能体视为能够参与市场化选择的"经济参与者"。
 
 [bold green]系统功能:[/bold green]
 • 智能任务解析和能力匹配
 • 动态智能体团队选择
 • 真实任务执行和结果返回
 
-[bold yellow]当前可用的智能体团队:[/bold yellow]
-• 内容创作团队 - 专注于研究、分析和内容撰写
-• 技术分析团队 - 专注于代码分析和技术问题解决
     """
     
     console.print(Panel(

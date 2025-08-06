@@ -19,13 +19,20 @@ AEX/
 ├── .env                   # 环境变量配置
 ├── hubs_config.json       # Hub配置文件
 ├── requirements.txt       # 依赖包
+├── cache/                 # 缓存目录
+│   ├── embeddings/        # 向量嵌入缓存
+│   └── capabilities.json  # 能力配置缓存
 └── src/
     ├── usp.py            # 用户端平台 (User-Side Platform)
     ├── aex.py            # 代理交换平台 (Agent Exchange)
     ├── agent_hub.py      # Agent Hub基类
+    ├── embedding_service.py    # 向量嵌入服务
+    ├── capability_mapper.py    # 智能能力映射器
     └── hubs/
         ├── content_creation_hub.py  # 内容创作团队
-        └── tech_analysis_hub.py     # 技术分析团队
+        ├── tech_analysis_hub.py     # 技术分析团队
+        ├── test_hub.py              # 测试团队
+        └── ...                      # 更多Hub（自动发现）
 ```
 
 ### 1. USP (User-Side Platform) - 用户端平台
@@ -41,20 +48,26 @@ AEX/
 - `TaskRequest`: 任务请求数据结构
 
 **智能能力映射**:
+- **动态能力发现**: 自动从Hub类中提取能力和描述
 - **语义搜索**: 使用Jina嵌入模型进行语义理解
 - **向量缓存**: 自动缓存嵌入向量，提高响应速度
 - **关键词备用**: 语义搜索失败时自动回退到关键词匹配
 
+**工作原理**:
+1. 系统启动时自动扫描`src/hubs/`目录下的所有Hub类
+2. 从每个Hub的`description`和`get_capabilities()`方法提取能力信息
+3. 动态构建能力描述库，用于语义搜索
+4. 用户输入任务时，使用语义搜索匹配最相关的能力
+
 **映射示例**:
 ```python
+# 动态发现的能力（来自实际Hub）
+"chemistry_simulation" -> "专注于计算化学模拟和文献挖掘，用于预测化学反应..."
+"content_creation" -> "专注于信息研究和高质量内容撰写..."
+
 # 语义搜索示例
 "帮我分析市场趋势" -> ["research", "analysis"] (相似度: 0.85)
 "写一份技术报告" -> ["writing", "report", "technical"] (相似度: 0.92)
-
-# 关键词映射示例
-"调研" -> "research"
-"写作" -> "writing"
-"代码" -> "coding"
 ```
 
 ### 2. AEX (Agent Exchange) - 代理交换平台
@@ -78,13 +91,32 @@ perfect_match_bonus = 0.2 (如果完全匹配)
 final_score = base_score + coverage_bonus + perfect_match_bonus
 ```
 
-### 3. Agent Hub - 智能体中心
+### 3. Embedding Service - 向量嵌入服务
+**文件**: `src/embedding_service.py`
+
+**功能**:
+- 使用Jina API生成文本向量嵌入
+- 自动缓存向量，提高响应速度
+- 计算余弦相似度进行语义匹配
+- 支持批量处理和异常处理
+
+### 4. Capability Mapper - 智能能力映射器
+**文件**: `src/capability_mapper.py`
+
+**功能**:
+- 动态发现和加载所有Hub类
+- 从Hub描述和能力列表构建能力库
+- 使用语义搜索匹配任务需求
+- 提供关键词匹配作为备用方案
+
+### 5. Agent Hub - 智能体中心
 **文件**: `src/agent_hub.py`, `src/hubs/`
 
 **基类**: `BaseAgentHub`
 - 定义Hub的抽象接口
 - 提供通用的初始化和执行逻辑
 - 处理错误和异常
+- 支持自动发现和动态加载
 
 **具体实现**:
 
@@ -94,10 +126,15 @@ final_score = base_score + coverage_bonus + perfect_match_bonus
 - **模式**: coordinate (协调执行)
 - **工具**: DuckDuckGoTools (网络搜索)
 
-#### TechAnalysisHub (技术分析团队)  
+#### TechAnalysisHub (技术分析团队)
 - **能力**: coding, data_analysis, debugging, optimization, technical
 - **成员**: 代码分析师Agent + 技术顾问Agent
 - **模式**: collaborative (协作模式)
+
+#### 自动发现机制
+- 系统启动时自动扫描`src/hubs/`目录
+- 动态导入所有继承自`BaseAgentHub`的类
+- 无需手动注册，添加新Hub文件即可自动识别
 
 ## 工作流程
 
@@ -177,21 +214,56 @@ python main.py
 
 ## 扩展指南
 
-### 添加新的Hub
-1. 在 `src/hubs/` 创建新的Hub类
-2. 继承 `BaseAgentHub`
-3. 实现 `setup_team()` 和 `get_capabilities()` 方法
-4. 在 `hubs_config.json` 中添加配置
-5. 在 `aex.py` 中添加导入逻辑
+### 添加新的Hub（推荐方式）
+1. 在 `src/hubs/` 目录创建新的Python文件，如 `my_new_hub.py`
+2. 创建继承自 `BaseAgentHub` 的类：
+```python
+from agno.agent import Agent
+from agno.team import Team
+from agno.models.openai import OpenAIChat
+from ..agent_hub import BaseAgentHub
 
-### 添加新的能力映射
-在 `usp.py` 的 `keyword_to_capability` 字典中添加新的关键词映射。
+class MyNewHub(BaseAgentHub):
+    def __init__(self):
+        super().__init__(
+            name="我的新团队",
+            description="专注于特定领域的智能体团队，擅长XXX、YYY和ZZZ"
+        )
+
+    def get_capabilities(self) -> list:
+        return ["capability1", "capability2", "capability3"]
+
+    def setup_team(self) -> Team:
+        # 创建Agent和Team
+        # ...
+        return team
+```
+3. 在 `hubs_config.json` 中添加配置：
+```json
+{
+  "hub_id": "my_new_hub",
+  "name": "我的新团队",
+  "description": "专注于特定领域的智能体团队",
+  "capabilities": ["capability1", "capability2", "capability3"],
+  "hub_class": "MyNewHub"
+}
+```
+4. 重启系统，新Hub将自动被发现和加载
+
+### 系统自动化特性
+- **自动发现**: 系统启动时自动扫描`src/hubs/`目录
+- **动态能力**: 从Hub的`description`和`get_capabilities()`自动提取能力
+- **语义匹配**: 无需手动维护关键词映射，系统自动进行语义匹配
+- **即插即用**: 添加新Hub文件后重启即可使用，无需修改核心代码
 
 ## 技术栈
 
 - **Python 3.10+**
 - **Agno**: AI智能体框架
 - **OpenRouter**: LLM API服务
+- **Jina AI**: 向量嵌入服务
+- **NumPy**: 数值计算和向量操作
+- **Requests**: HTTP请求库
 - **Rich**: 终端UI库
 - **DuckDuckGo**: 网络搜索工具
 
