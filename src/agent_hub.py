@@ -90,7 +90,7 @@ class BaseAgentHub(ABC):
     def get_model_config(self) -> dict:
         """获取模型配置"""
         return {
-            "id": os.getenv("OPENAI_MODEL", "gpt-4"),
+            "id": os.getenv("OPENAI_MODEL", "gpt-4o"),
             "api_key": os.getenv("OPENAI_API_KEY"),
             "base_url": os.getenv("OPENAI_BASE_URL")
         }

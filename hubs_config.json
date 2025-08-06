@@ -7,10 +7,73 @@
     "hub_class": "ContentCreationHub"
   },
   {
-    "hub_id": "tech_analysis_hub", 
+    "hub_id": "tech_analysis_hub",
     "name": "技术分析团队",
     "description": "专注于代码分析、执行和技术问题解决。擅长编程、调试、性能优化和技术咨询。",
     "capabilities": ["coding", "data_analysis", "debugging", "optimization", "technical"],
     "hub_class": "TechAnalysisHub"
+  },
+  {
+    "hub_id": "test_hub",
+    "name": "测试团队",
+    "description": "用于测试自动扫描功能的简单团队。",
+    "capabilities": ["test", "demo", "example"],
+    "hub_class": "TestHub"
+  },
+  {
+    "hub_id": "code_crafters_hub",
+    "name": "代码工匠团队",
+    "description": "专注于编写、测试和调试高质量代码的专家团队。擅长软件开发全流程，从需求到交付。",
+    "capabilities": ["coding", "debugging", "testing", "documentation", "code_review"],
+    "hub_class": "CodeCraftersHub"
+  },
+  {
+    "hub_id": "social_spark_hub",
+    "name": "社交网络火花团队",
+    "description": "专注于社交媒体趋势分析、内容创意和病毒式传播。擅长品牌推广和文案撰写。",
+    "capabilities": ["social_media", "trend_analysis", "content_creation", "marketing", "copywriting"],
+    "hub_class": "SocialSparkHub"
+  },
+  {
+    "hub_id": "strategy_forge_hub",
+    "name": "战略熔炉咨询团队",
+    "description": "提供深入的市场分析、竞品研究和商业战略规划。擅长商业计划书和市场报告。",
+    "capabilities": ["strategy", "market_analysis", "finance", "business_planning", "report"],
+    "hub_class": "StrategyForgeHub"
+  },
+  {
+    "hub_id": "data_driven_hub",
+    "name": "数据驱动团队",
+    "description": "专业的数据处理、分析和可视化团队，将数据转化为业务洞察。擅长Python编程和数据报告。",
+    "capabilities": ["data_analysis", "visualization", "python", "coding", "report"],
+    "hub_class": "DataDrivenHub"
+  },
+  {
+    "hub_id": "general_assitant_hub",
+    "name": "通用助理",
+    "description": "一个多面手通用助理，以较低的成本快速完成常规任务。性价比之选。",
+    "capabilities": ["research", "summary", "writing", "task_management"],
+    "hub_class": "GeneralAssitantHub"
+  },
+    {
+    "hub_id": "chem_synth_hub",
+    "name": "化学合成路径规划团队",
+    "description": "专注于计算化学模拟和文献挖掘，用于预测化学反应、设计分子结构和规划最优合成路径。",
+    "capabilities": ["synthesis_planning", "computational_chemistry", "literature_search", "molecular_analysis", "reaction_prediction"],
+    "hub_class": "ChemSynthHub"
+  },
+  {
+    "hub_id": "mat_design_hub",
+    "name": "新材料设计与模拟团队",
+    "description": "结合材料信息学与计算模拟，用于设计具有特定性能（如硬度、导电性）的新材料，并预测其在各种条件下的行为。",
+    "capabilities": ["materials_design", "property_prediction", "simulation", "data_analysis", "materials_informatics"],
+    "hub_class": "MatDesignHub"
+  },
+  {
+    "hub_id": "physics_sim_hub",
+    "name": "物理现象模拟与理论团队",
+    "description": "专注于解决理论物理问题和进行计算物理模拟，用于探索从天体物理到量子力学的各类物理现象。",
+    "capabilities": ["physics_simulation", "theoretical_modeling", "symbolic_math", "numerical_methods", "data_analysis"],
+    "hub_class": "PhysicsSimHub"
   }
 ]

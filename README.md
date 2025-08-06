@@ -40,12 +40,21 @@ AEX/
 - `UserSidePlatform`: 处理用户输入和任务解析
 - `TaskRequest`: 任务请求数据结构
 
-**关键词映射示例**:
+**智能能力映射**:
+- **语义搜索**: 使用Jina嵌入模型进行语义理解
+- **向量缓存**: 自动缓存嵌入向量，提高响应速度
+- **关键词备用**: 语义搜索失败时自动回退到关键词匹配
+
+**映射示例**:
 ```python
+# 语义搜索示例
+"帮我分析市场趋势" -> ["research", "analysis"] (相似度: 0.85)
+"写一份技术报告" -> ["writing", "report", "technical"] (相似度: 0.92)
+
+# 关键词映射示例
 "调研" -> "research"
-"写作" -> "writing" 
+"写作" -> "writing"
 "代码" -> "coding"
-"优化" -> "optimization"
 ```
 
 ### 2. AEX (Agent Exchange) - 代理交换平台
@@ -110,9 +119,16 @@ graph TD
 
 ### .env 环境变量
 ```bash
+# OpenRouter API配置
 OPENAI_API_KEY=sk-or-v1-xxx  # OpenRouter API Key
 OPENAI_BASE_URL=https://openrouter.ai/api/v1
 OPENAI_MODEL=moonshotai/kimi-k2:free
+
+# Jina嵌入API配置
+JINA_API_KEY=jina_xxx  # Jina API Key
+
+# AEX配置
+USE_SEMANTIC_SEARCH=true  # 启用语义搜索
 ```
 
 ### hubs_config.json Hub配置
@@ -182,10 +198,13 @@ python main.py
 ## 项目特点
 
 1. **模块化设计**: 清晰的组件分离，易于扩展
-2. **动态选择**: 基于能力匹配的智能Hub选择
-3. **真实执行**: 集成Agno框架，真实执行任务
-4. **用户友好**: Rich库提供美观的CLI界面
-5. **可配置**: JSON配置文件，易于管理Hub
+2. **智能语义搜索**: 使用Jina嵌入模型进行语义理解
+3. **向量缓存**: 自动缓存嵌入向量，提高响应速度
+4. **动态Hub发现**: 自动扫描和加载新的Agent Hub
+5. **动态选择**: 基于能力匹配的智能Hub选择
+6. **真实执行**: 集成Agno框架，真实执行任务
+7. **用户友好**: Rich库提供美观的CLI界面
+8. **可配置**: JSON配置文件，易于管理Hub
 
 ## 未来规划
 

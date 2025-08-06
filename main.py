@@ -88,7 +88,8 @@ def main():
             return 1
         
         # 初始化组件
-        usp = UserSidePlatform()
+        use_semantic = os.getenv("USE_SEMANTIC_SEARCH", "true").lower() == "true"
+        usp = UserSidePlatform(use_semantic_search=use_semantic)
         aex = AgentExchange()
         
         console.print("[green]系统初始化完成[/green]\n")

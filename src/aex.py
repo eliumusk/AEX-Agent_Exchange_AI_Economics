@@ -5,12 +5,16 @@ AEX - Agent Exchange
 
 import json
 import os
+import importlib
+import inspect
+from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
 from .usp import TaskRequest
+from .agent_hub import BaseAgentHub
 
 console = Console()
 
@@ -39,12 +43,58 @@ class HubInfo:
 
 class AgentExchange:
     """代理交换平台 - 核心控制器"""
-    
+
     def __init__(self, config_file: str = "hubs_config.json"):
         self.config_file = config_file
         self.available_hubs: List[HubInfo] = []
         self.hub_instances: Dict[str, Any] = {}
-        
+        self.hub_classes: Dict[str, type] = {}
+        self._discover_hub_classes()
+
+    def _discover_hub_classes(self):
+        """自动发现所有Hub类"""
+        try:
+            # 获取hubs目录路径
+            hubs_dir = Path(__file__).parent / "hubs"
+
+            if not hubs_dir.exists():
+                console.print("[yellow]警告: hubs目录不存在[/yellow]")
+                return
+
+            # 扫描所有Python文件
+            for py_file in hubs_dir.glob("*.py"):
+                if py_file.name.startswith("__"):
+                    continue
+
+                module_name = py_file.stem
+                try:
+                    # 动态导入模块
+                    module = importlib.import_module(f"src.hubs.{module_name}")
+
+                    # 查找继承自BaseAgentHub的类
+                    for name, obj in inspect.getmembers(module, inspect.isclass):
+                        if (obj != BaseAgentHub and
+                            issubclass(obj, BaseAgentHub) and
+                            obj.__module__ == module.__name__):
+
+                            self.hub_classes[name] = obj
+                            console.print(f"[green]发现Hub类: {name}[/green]")
+
+                except Exception as e:
+                    console.print(f"[yellow]导入模块 {module_name} 失败: {e}[/yellow]")
+
+        except Exception as e:
+            console.print(f"[red]扫描Hub类失败: {e}[/red]")
+
+    def display_discovered_hubs(self):
+        """显示发现的Hub类"""
+        if self.hub_classes:
+            console.print(f"\n[cyan]发现的Hub类 ({len(self.hub_classes)}个):[/cyan]")
+            for class_name in self.hub_classes.keys():
+                console.print(f"  • {class_name}")
+        else:
+            console.print("[yellow]未发现任何Hub类[/yellow]")
+
     def load_hub_configs(self) -> bool:
         """加载Hub配置文件"""
         try:
@@ -153,21 +203,23 @@ class AgentExchange:
     def get_hub_instance(self, hub_info: HubInfo):
         """获取或创建Hub实例"""
         if hub_info.hub_id not in self.hub_instances:
-            # 动态导入Hub类
+            # 使用自动发现的Hub类
             try:
-                if hub_info.hub_class == "ContentCreationHub":
-                    from .hubs.content_creation_hub import ContentCreationHub
-                    self.hub_instances[hub_info.hub_id] = ContentCreationHub()
-                elif hub_info.hub_class == "TechAnalysisHub":
-                    from .hubs.tech_analysis_hub import TechAnalysisHub
-                    self.hub_instances[hub_info.hub_id] = TechAnalysisHub()
+                hub_class_name = hub_info.hub_class
+
+                if hub_class_name in self.hub_classes:
+                    hub_class = self.hub_classes[hub_class_name]
+                    self.hub_instances[hub_info.hub_id] = hub_class()
+                    console.print(f"[green]成功创建Hub实例: {hub_class_name}[/green]")
                 else:
-                    raise ImportError(f"未知的Hub类: {hub_info.hub_class}")
-                    
-            except ImportError as e:
-                console.print(f"[red]无法导入Hub类 {hub_info.hub_class}: {e}[/red]")
+                    console.print(f"[red]未找到Hub类: {hub_class_name}[/red]")
+                    console.print(f"[yellow]可用的Hub类: {list(self.hub_classes.keys())}[/yellow]")
+                    return None
+
+            except Exception as e:
+                console.print(f"[red]创建Hub实例失败 {hub_info.hub_class}: {e}[/red]")
                 return None
-        
+
         return self.hub_instances[hub_info.hub_id]
     
     def execute_task(self, task_request: TaskRequest) -> Optional[str]:
@@ -176,7 +228,10 @@ class AgentExchange:
             "[bold blue]开始任务执行流程[/bold blue]",
             border_style="blue"
         ))
-        
+
+        # 显示发现的Hub类
+        self.display_discovered_hubs()
+
         # 1. 加载Hub配置
         if not self.load_hub_configs():
             return None

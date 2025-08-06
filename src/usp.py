@@ -1,6 +1,6 @@
 """
 USP - User-Side Platform
-用户端平台：处理CLI输入、任务解析和关键词提取
+用户端平台：处理CLI输入、任务解析和智能能力映射
 """
 
 import re
@@ -8,6 +8,9 @@ from typing import List, Dict, Any
 from rich.console import Console
 from rich.prompt import Prompt
 from rich.panel import Panel
+
+from .embedding_service import EmbeddingService
+from .capability_mapper import CapabilityMapper
 
 console = Console()
 
@@ -28,47 +31,34 @@ class TaskRequest:
 
 class UserSidePlatform:
     """用户端平台 - 处理用户输入和任务解析"""
-    
-    def __init__(self):
-        # 关键词到能力的映射
+
+    def __init__(self, use_semantic_search: bool = True):
+        self.use_semantic_search = use_semantic_search
+
+        # 初始化嵌入服务和能力映射器
+        if use_semantic_search:
+            try:
+                self.embedding_service = EmbeddingService()
+                self.capability_mapper = CapabilityMapper(self.embedding_service)
+                console.print("[green]智能语义搜索已启用[/green]")
+            except Exception as e:
+                console.print(f"[yellow]语义搜索初始化失败，使用关键词匹配: {e}[/yellow]")
+                self.use_semantic_search = False
+                self.capability_mapper = None
+
+        # 关键词到能力的映射（备用方案）
         self.keyword_to_capability = {
             # 研究相关
             "调研": "research",
-            "研究": "research", 
-            "分析": "analysis",
+            "研究": "research",
             "搜索": "research",
             "查找": "research",
-            "了解": "research",
-            
-            # 写作相关
             "写": "writing",
-            "撰写": "writing",
             "生成": "writing",
-            "创作": "writing",
-            "编写": "writing",
-            
-            # 总结相关
             "总结": "summary",
-            "汇总": "summary",
-            "概括": "summary",
-            "整理": "summary",
-            
-            # 报告相关
             "报告": "report",
-            "文档": "report",
-            "方案": "report",
-            
-            # 技术相关
             "代码": "coding",
-            "编程": "coding",
-            "开发": "coding",
-            "程序": "coding",
-            "算法": "coding",
-            "调试": "debugging",
-            "优化": "optimization",
-            "性能": "optimization",
-            "技术": "technical",
-            "数据": "data_analysis"
+
         }
     
     def get_user_input(self) -> str:
@@ -123,16 +113,28 @@ class UserSidePlatform:
     
     def create_task_request(self, user_input: str) -> TaskRequest:
         """创建任务请求对象"""
-        # 提取关键词
-        keywords = self.extract_keywords(user_input)
-        
-        # 映射到能力
-        capabilities = self.map_to_capabilities(keywords)
-        
-        # 显示解析结果
-        console.print(f"\n[dim]检测到的关键词: {keywords}[/dim]")
-        console.print(f"[dim]映射到的能力: {capabilities}[/dim]")
-        
+        if self.use_semantic_search and self.capability_mapper:
+            # 使用智能语义搜索
+            console.print("[cyan]使用智能语义搜索分析任务...[/cyan]")
+            capabilities = self.capability_mapper.extract_capabilities(user_input)
+
+            # 显示解析结果
+            console.print(f"\n[dim]语义分析结果: {capabilities}[/dim]")
+
+            # 显示能力描述
+            for cap in capabilities:
+                desc = self.capability_mapper.get_capability_description(cap)
+                console.print(f"[dim]  • {cap}: {desc[:50]}...[/dim]")
+        else:
+            # 使用传统关键词匹配
+            console.print("[yellow]使用关键词匹配分析任务...[/yellow]")
+            keywords = self.extract_keywords(user_input)
+            capabilities = self.map_to_capabilities(keywords)
+
+            # 显示解析结果
+            console.print(f"\n[dim]检测到的关键词: {keywords}[/dim]")
+            console.print(f"[dim]映射到的能力: {capabilities}[/dim]")
+
         return TaskRequest(user_input, capabilities)
     
     def display_task_info(self, task_request: TaskRequest):
