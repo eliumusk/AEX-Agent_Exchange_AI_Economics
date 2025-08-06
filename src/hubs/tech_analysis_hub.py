@@ -77,11 +77,10 @@ class TechAnalysisHub(BaseAgentHub):
             name="技术分析团队",
             description="专业的技术分析和咨询团队，解决各种技术问题",
             members=[code_analyst, tech_consultant],
-            mode="collaborative",  # 协作模式：由主agent进行分配
-            memory=True,
+            mode="collaborate",  # 协作模式：两个Agent协同工作
             show_members_responses=True,
             show_tool_calls=True,
-            markdown=True,
+            markdown=True
         )
         
         return team

@@ -75,11 +75,10 @@ class ContentCreationHub(BaseAgentHub):
             name="内容创作团队",
             description="专业的研究和写作团队，致力于创作高质量内容",
             members=[researcher, writer],
-            mode="sequential",  # 顺序执行：先研究，后写作
+            mode="coordinate",  # 协调执行：先研究，后写作
             show_members_responses=True,
             show_tool_calls=True,
-            markdown=True,
-            memory=True
+            markdown=True
         )
         
         return team

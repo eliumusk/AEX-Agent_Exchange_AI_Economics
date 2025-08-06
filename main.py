@@ -111,12 +111,7 @@ def main():
                 
                 # 4. 显示结果
                 if result:
-                    console.print(Panel(
-                        result,
-                        title="任务执行结果",
-                        border_style="green",
-                        padding=(1, 2)
-                    ))
+                    console.print(f"\n[green]✅ {result}[/green]")
                 else:
                     console.print(Panel(
                         "[red]任务执行失败，请检查配置或重试[/red]",

@@ -89,7 +89,7 @@ async for chunk in await team.arun("What is the weather in Tokyo?", stream=True)
 ```
   * **LLM依赖**: 需要配置一个大语言模型OPENROUTER的API Key，供`agno`使用。apikey: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
   * baseurl:https://openrouter.ai/api/v1
-  * model:openrouter/horizon-beta
+  * model:moonshotai/kimi-k2:free
 
 #### **5. 核心工作流 (Core Workflow)**
 

@@ -8,7 +8,7 @@ load_dotenv()
 
 # 你可以将 api_key 传递到模型中（如果支持的话）
 agent = Agent(
-    model=OpenAIChat(id="openrouter/horizon-beta"),
+    model=OpenAIChat(id="moonshotai/kimi-k2:free"),
     instructions="说中文.",
     markdown=True,
 )
