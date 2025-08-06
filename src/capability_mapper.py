@@ -4,79 +4,125 @@ Capability Mapper
 """
 
 import json
+import importlib
+import inspect
 from typing import List, Dict, Any, Tuple
 from pathlib import Path
 from rich.console import Console
 
 from .embedding_service import EmbeddingService
+from .agent_hub import BaseAgentHub
 
 console = Console()
 
 
 class CapabilityMapper:
     """智能能力映射器"""
-    
+
     def __init__(self, embedding_service: EmbeddingService):
         self.embedding_service = embedding_service
-        self.capability_descriptions = self._load_capability_descriptions()
+        self.hub_classes = self._discover_hub_classes()
+        self.capability_descriptions = self._build_dynamic_capability_descriptions()
         self.capability_keywords = self._load_capability_keywords()
-        
-    def _load_capability_descriptions(self) -> Dict[str, str]:
-        """加载能力描述"""
-        descriptions = {
-            # 研究相关
-            "research": "信息搜索、调研、资料收集、数据分析、市场研究、学术研究、背景调查",
-            "analysis": "数据分析、趋势分析、统计分析、内容分析、比较分析、深度分析",
-            
-            # 写作相关  
-            "writing": "文章撰写、内容创作、文案写作、报告编写、博客写作、创意写作",
-            "summary": "内容总结、摘要提取、要点归纳、信息整理、精华提炼",
-            "report": "报告生成、文档制作、方案撰写、总结报告、分析报告",
-            
-            # 技术相关
-            "coding": "编程开发、代码编写、软件开发、脚本编写、算法实现、程序设计",
-            "debugging": "代码调试、错误修复、问题诊断、bug修复、程序调试",
-            "optimization": "性能优化、代码优化、系统优化、效率提升、速度优化",
-            "technical": "技术咨询、技术支持、技术分析、架构设计、技术方案",
-            "data_analysis": "数据处理、数据挖掘、数据可视化、统计分析、数据科学",
-            
-            # 测试相关
-            "test": "软件测试、功能测试、性能测试、自动化测试、测试用例设计",
-            "demo": "演示制作、原型开发、概念验证、示例创建、展示设计",
-            "example": "示例代码、使用案例、教程制作、样例开发、参考实现",
-            
-            # 创意相关
-            "creative": "创意设计、艺术创作、创新思维、概念设计、视觉设计",
-            "design": "界面设计、用户体验、产品设计、视觉设计、交互设计",
-            
-            # 商业相关
-            "business": "商业分析、市场策略、商业计划、竞争分析、商业咨询",
-            "marketing": "市场营销、品牌推广、营销策略、广告创意、社交媒体",
-            
-            # 教育相关
-            "education": "教学设计、课程开发、培训材料、学习指导、知识传授",
-            "tutorial": "教程制作、指导文档、学习资料、操作指南、培训内容"
-        }
+
+    def _discover_hub_classes(self) -> Dict[str, type]:
+        """动态发现所有Hub类"""
+        hub_classes = {}
+        try:
+            # 获取hubs目录路径
+            hubs_dir = Path(__file__).parent / "hubs"
+
+            if not hubs_dir.exists():
+                console.print("[yellow]警告: hubs目录不存在[/yellow]")
+                return hub_classes
+
+            # 扫描所有Python文件
+            for py_file in hubs_dir.glob("*.py"):
+                if py_file.name.startswith("__"):
+                    continue
+
+                module_name = py_file.stem
+                try:
+                    # 动态导入模块
+                    module = importlib.import_module(f"src.hubs.{module_name}")
+
+                    # 查找继承自BaseAgentHub的类
+                    for name, obj in inspect.getmembers(module, inspect.isclass):
+                        if (obj != BaseAgentHub and
+                            issubclass(obj, BaseAgentHub) and
+                            obj.__module__ == module.__name__):
+
+                            hub_classes[name] = obj
+
+                except Exception as e:
+                    console.print(f"[yellow]导入模块 {module_name} 失败: {e}[/yellow]")
+
+        except Exception as e:
+            console.print(f"[red]扫描Hub类失败: {e}[/red]")
+
+        return hub_classes
+
+    def _build_dynamic_capability_descriptions(self) -> Dict[str, str]:
+        """动态构建能力描述"""
+        descriptions = {}
+
+        # 从所有Hub类中收集能力和描述
+        for hub_class_name, hub_class in self.hub_classes.items():
+            try:
+                # 创建Hub实例来获取能力和描述
+                hub_instance = hub_class()
+                capabilities = hub_instance.get_capabilities()
+                hub_description = hub_instance.description
+
+                # 为每个能力添加或更新描述
+                for capability in capabilities:
+                    if capability in descriptions:
+                        # 如果能力已存在，合并描述
+                        descriptions[capability] += f"; {hub_description}"
+                    else:
+                        # 新能力，使用Hub描述
+                        descriptions[capability] = hub_description
+
+                console.print(f"[green]从 {hub_class_name} 收集到能力: {capabilities}[/green]")
+
+            except Exception as e:
+                console.print(f"[yellow]无法从 {hub_class_name} 获取能力: {e}[/yellow]")
+
+        # 如果没有发现任何能力，使用基础默认能力
+        if not descriptions:
+            console.print("[yellow]未发现任何Hub能力，使用默认能力[/yellow]")
+            descriptions = {
+                "research": "信息搜索、调研、资料收集、数据分析",
+                "writing": "文章撰写、内容创作、文案写作、报告编写",
+                "analysis": "数据分析、趋势分析、统计分析、内容分析",
+                "technical": "技术咨询、技术支持、技术分析、架构设计"
+            }
+
+        console.print(f"[cyan]动态构建了 {len(descriptions)} 个能力描述[/cyan]")
         return descriptions
     
     def _load_capability_keywords(self) -> Dict[str, List[str]]:
-        """加载能力关键词（作为备用方案）"""
+        """加载基础关键词（作为备用方案）"""
+        # 只保留最基本的关键词作为备用
         keywords = {
-            "research": ["调研", "研究", "搜索", "查找", "了解", "分析", "调查"],
-            "writing": ["写", "撰写", "生成", "创作", "编写", "写作"],
-            "summary": ["总结", "汇总", "概括", "整理", "归纳"],
-            "report": ["报告", "文档", "方案", "总结报告"],
-            "coding": ["代码", "编程", "开发", "程序", "算法"],
-            "debugging": ["调试", "修复", "错误", "bug"],
-            "optimization": ["优化", "性能", "提升", "改进"],
-            "technical": ["技术", "架构", "系统", "工程"],
-            "data_analysis": ["数据", "统计", "分析", "挖掘"],
-            "test": ["测试", "验证", "检验"],
-            "demo": ["演示", "展示", "原型"],
-            "example": ["示例", "例子", "案例", "样例"]
+            "research": ["调研", "研究", "搜索", "查找", "了解", "分析"],
+            "writing": ["写", "撰写", "生成", "创作", "编写"],
+            "technical": ["技术", "代码", "编程", "开发"],
+            "analysis": ["分析", "统计", "数据"]
         }
         return keywords
-    
+
+    def display_discovered_capabilities(self):
+        """显示动态发现的能力"""
+        if self.capability_descriptions:
+            console.print(f"\n[cyan]动态发现的能力 ({len(self.capability_descriptions)}个):[/cyan]")
+            for capability, description in self.capability_descriptions.items():
+                # 截断过长的描述
+                short_desc = description[:80] + "..." if len(description) > 80 else description
+                console.print(f"  • [bold]{capability}[/bold]: {short_desc}")
+        else:
+            console.print("[yellow]未发现任何能力[/yellow]")
+
     def extract_capabilities_semantic(self, task_text: str, threshold: float = 0.3) -> List[str]:
         """使用语义搜索提取能力"""
         try:
